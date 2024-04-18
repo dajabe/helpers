@@ -11,6 +11,18 @@ edit_cmd='nvim .'
 # If you have anything to run to set your environment up before launch
 # comment out this line and the other $setup_cmd lines if you don't want it
 # setup_cmd='nvm use'
+setup_cmd=''
+
+# Allow passing of setup commands to the script for example:
+# $ tmux-session-here 'npm run dev'
+# if you don't quote 'npm run dev' then it will treat it as 3 seperate commands
+for cmd in "$@"; do
+  if [[ -z $setup_cmd ]]; then
+    setup_cmd="$cmd"
+  else
+    setup_cmd="$setup_cmd; $cmd"
+  fi
+done
 
 # If a session of the same name already exists then attach to that instead
 if tmux has-session -t "$session_name" 2>/dev/null; then

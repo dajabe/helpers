@@ -11,6 +11,18 @@ edit_cmd='nvim .'
 # If you have anything to run to set your environment up before launch
 # set to blank if you want nothing to run
 # setup_cmd='nvm use'
+setup_cmd=''
+
+# Allow passing of setup commands to the script for example:
+# $ tmux-session-here 'npm run dev'
+# if you don't quote 'npm run dev' then it will treat it as 3 seperate commands
+for cmd in "$@"; do
+  if [[ -z $setup_cmd ]]; then
+    setup_cmd="$cmd"
+  else
+    setup_cmd="$setup_cmd; $cmd"
+  fi
+done
 
 # If a session of the same name already exists then attach to that instead
 if tmux has-session -t "$session_name" 2>/dev/null; then
@@ -25,9 +37,9 @@ if [[ -z "${TMUX}" ]]; then
   # based off the comment here
   # https://github.com/tmux/tmux/issues/2645#issuecomment-820763361
   tmux new-session -x- -y- -dc "$PWD" -s "$session_name" -n $window_name
-  tmux send-keys "$edit_cmd" C-m
+  tmux send-keys "${edit_cmd}" C-m
   tmux split-window -v -l "$split_size" -c "$PWD"
-  tmux send-keys "$setup_cmd" C-m
+  tmux send-keys "${setup_cmd}" C-m
   tmux select-pane -t 0
   tmux attach -t "$session_name"
 else
@@ -35,8 +47,8 @@ else
   tmux new-session -d -c "$PWD" -s "$session_name" -n $window_name
   # Chaining commands here to ensure they are made in the right context
   tmux switch-client -t "$session_name"\; \
-    send-keys "$edit_cmd" C-m\; \
+    send-keys "${edit_cmd}" C-m\; \
     split-window -v -l "$split_size" -c "$PWD"\; \
-    send-keys "$setup_cmd" C-m\; \
+    send-keys "${setup_cmd}" C-m\; \
     select-pane -t 0
 fi
