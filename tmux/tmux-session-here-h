@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+
+# split_size can be either a percentage or a number of lines
+split_size='50%'
+# Grab current directoy name as use it as the session name
+session_name=$(basename "$PWD")
+# Specify a name for the window created in the session
+window_name='main'
+# Set your preferred editor launch command
+edit_cmd='nvim .'
+# If you have anything to run to set your environment up before launch
+# comment out this line and the other $setup_cmd lines if you don't want it
+# setup_cmd='nvm use'
+
+# If a session of the same name already exists then attach to that instead
+if tmux has-session -t "$session_name" 2>/dev/null; then
+  echo 'found session reattaching'
+  tmux attach -t "$session_name"
+  exit
+fi
+
+if [[ -z "${TMUX}" ]]; then
+  # -x- and -y- are given to ensure that the sizing respects the terminal
+  # this is not needed if tmux has already been launched
+  # based off the comment here
+  # https://github.com/tmux/tmux/issues/2645#issuecomment-820763361
+  tmux new-session -x- -y- -dc "$PWD" -s "$session_name" -n $window_name
+  tmux send-keys "$edit_cmd" C-m
+  tmux split-window -h -l "$split_size" -c "$PWD"
+  tmux send-keys "$setup_cmd" C-m
+  tmux select-pane -t 0
+  tmux attach -t "$session_name"
+else
+  echo 'launching from inside tmux'
+  tmux new-session -d -c "$PWD" -s "$session_name" -n $window_name
+  # Chaining commands here to ensure they are made in the right context
+  tmux switch-client -t "$session_name"\; \
+    send-keys "$edit_cmd" C-m\; \
+    split-window -h -l "$split_size" -c "$PWD"\; \
+    send-keys "$setup_cmd" C-m\; \
+    select-pane -t 0
+fi
